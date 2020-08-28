@@ -3,10 +3,10 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { act } from "react-dom/test-utils";
 
-import App from "./App";
+import App, { SearchNoSideEffectsOrState } from "./App";
 
 describe("App", () => {
-  test("renders App component", () => {
+  test("renders App component 1", () => {
     render(<App />);
 
     expect(screen.getByText("Search:")).toBeInTheDocument();
@@ -16,10 +16,10 @@ describe("App", () => {
   test("test selecting via role for test approach", () => {
     render(<App />);
 
-    screen.getByRole("textbox");
+    screen.getByText("Search:");
   });
 
-  test("renders App component", () => {
+  test("renders App component 2", () => {
     act(() => {
       render(<App />);
     });
@@ -30,7 +30,7 @@ describe("App", () => {
     expect(screen.queryByText(/Searches for JavaScript/)).toBeNull();
   });
 
-  test("renders App component", async () => {
+  test("renders App component 3", async () => {
     render(<App />);
 
     expect(screen.queryByText(/Signed in as/)).toBeNull();
@@ -42,7 +42,7 @@ describe("App", () => {
     //screen.debug();
   });
 
-  test("renders App component", async () => {
+  test("renders App component 4", async () => {
     render(<App />);
 
     // wait for the user to resolve
@@ -53,7 +53,7 @@ describe("App", () => {
 
     expect(screen.queryByText(/Searches for JavaScript/)).toBeNull();
 
-    fireEvent.change(screen.getByRole("textbox"), {
+    fireEvent.change(screen.getByLabelText("Search:"), {
       target: { value: "JavaScript" },
     });
 
@@ -62,7 +62,7 @@ describe("App", () => {
     //screen.debug();
   });
 
-  test("renders App component", async () => {
+  test("renders App component 5", async () => {
     render(<App />);
 
     // wait for the user to resolve
@@ -73,9 +73,43 @@ describe("App", () => {
     // A fireEvent.change() triggers only a change event whereas
     // userEvent.type triggers a change event, but also keyDown, keyPress,
     // and keyUp events.
-    await userEvent.type(screen.getByRole("textbox"), "JavaScript");
+    await userEvent.type(screen.getByLabelText("Search:"), "JavaScript");
 
     expect(screen.getByText(/Searches for JavaScript/)).toBeInTheDocument();
+  });
+
+  describe("SearchNoSideEffectsOrState - fireEvent", () => {
+    test("calls the onChange callback handler", () => {
+      const onChange = jest.fn();
+
+      render(
+        <SearchNoSideEffectsOrState value="" onChange={onChange}>
+          Search2:
+        </SearchNoSideEffectsOrState>
+      );
+
+      fireEvent.change(screen.getByLabelText("Search2:"), {
+        target: { value: "JavaScript" },
+      });
+
+      expect(onChange).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("SearchNoSideEffectsOrState - userEvent", () => {
+    test("calls the onChange callback handler", async () => {
+      const onChange = jest.fn();
+
+      render(
+        <SearchNoSideEffectsOrState value="" onChange={onChange}>
+          Search2:
+        </SearchNoSideEffectsOrState>
+      );
+
+      await userEvent.type(screen.getByLabelText("Search2:"), "JavaScript");
+
+      expect(onChange).toHaveBeenCalledTimes(10);
+    });
   });
 });
 
