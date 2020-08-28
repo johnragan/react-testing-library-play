@@ -1,13 +1,17 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import axios from "axios";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { act } from "react-dom/test-utils";
 
 import App, { SearchNoSideEffectsOrState } from "./App";
 
+jest.mock("axios");
+
 describe("App", () => {
   test("renders App component 1", () => {
-    render(<App />);
+    act(() => {
+      render(<App />);
+    });
 
     expect(screen.getByText("Search:")).toBeInTheDocument();
     expect(screen.getByText(/Search:/)).toBeInTheDocument();
@@ -93,6 +97,56 @@ describe("App", () => {
       });
 
       expect(onChange).toHaveBeenCalledTimes(1);
+    });
+
+    test("fetches stories from an API and displays them", async () => {
+      const stories = [
+        { objectID: "1", title: "Hello" },
+        { objectID: "2", title: "React" },
+      ];
+
+      axios.get.mockImplementationOnce(() =>
+        Promise.resolve({ data: { hits: stories } })
+      );
+
+      render(<App />);
+
+      await userEvent.click(screen.getByRole("button"));
+
+      const items = await screen.findAllByRole("listitem");
+
+      expect(items).toHaveLength(2);
+    });
+
+    test("fetches stories from an API and fails", async () => {
+      axios.get.mockImplementationOnce(() => Promise.reject(new Error()));
+
+      render(<App />);
+
+      await userEvent.click(screen.getByRole("button"));
+
+      const message = await screen.findByText(/Something went wrong/);
+
+      expect(message).toBeInTheDocument();
+    });
+
+    test("fetches stories from an API and displays them", async () => {
+      const stories = [
+        { objectID: "1", title: "Hello" },
+        { objectID: "2", title: "React" },
+      ];
+
+      const promise = Promise.resolve({ data: { hits: stories } });
+
+      axios.get.mockImplementationOnce(() => promise);
+
+      render(<App />);
+
+      await userEvent.click(screen.getByRole("button"));
+
+      await act(() => promise);
+
+      expect(screen.getAllByRole("listitem")).toHaveLength(2);
     });
   });
 
